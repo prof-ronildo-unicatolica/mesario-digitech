@@ -63,7 +63,7 @@ mesario-digitech/
 │   ├── Chapa.php              # CRUD de chapas
 │   ├── Terminal.php           # CRUD de terminais
 │   ├── Apuracao.php           # Contagem e resultados
-│   └── Auth.php               # Autenticação
+│   └── Auth.php               # Autenticação (login, logout, perfis)
 ├── admin/
 │   ├── index.php              # Dashboard administrativo
 │   ├── alunos.php             # Gerenciamento de alunos
@@ -77,6 +77,21 @@ mesario-digitech/
     ├── schema.sql             # Criação do banco e tabelas
     └── seed.sql               # Dados iniciais para teste
 ```
+
+## Modelo de Dados
+
+| Tabela            | Descrição                                             |
+| ----------------- | ----------------------------------------------------- |
+| `alunos`          | Cadastro de alunos (matrícula, nome, turma, tipo, senha_hash) |
+| `chapas`          | Chapas/candidatos disponíveis para votação            |
+| `terminais`       | Terminais de votação disponíveis                      |
+| `sessoes_votacao` | Controle de sessões de votação por terminal           |
+| `votos`           | Registro de votos (com constraint contra duplicidade) |
+| `eleicoes`        | Configuração de período de votação                    |
+| `audit_log`       | Log de auditoria de ações do sistema                  |
+| `rate_limit`      | Controle de tentativas por IP                         |
+
+> **Banco compartilhado:** ambos os módulos (mesario-digitech e votacao-digitech) utilizam o mesmo banco `votacao_digitech`.
 
 ## Fluxo de Uso
 

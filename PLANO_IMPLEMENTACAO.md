@@ -4,15 +4,21 @@ Sistema de votação escolar digital com painel de mesário, terminais de votaç
 
 ---
 
-## Modelo de Dados (tabelas inferidas do código existente)
+## Modelo de Dados (banco compartilhado: `votacao_digitech`)
 
-| Tabela | Colunas |
-|---|---|
-| `alunos` | `id`, `matricula`, `nome`, `turma` |
-| `chapas` | `id`, `numero`, `nome`, `foto` |
-| `terminais` | `id`, `numero`, `nome` |
+> Ambos os módulos (mesario-digitech e votacao-digitech) compartilham o mesmo banco de dados.
+> O schema é definido no `schema.sql` do módulo votacao-digitech.
+
+| Tabela            | Colunas                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| `alunos`          | `id`, `matricula`, `nome`, `email`, `turma`, `tipo`, `senha_hash`                                       |
+| `chapas`          | `id`, `numero`, `nome`, `descricao`                                                                     |
+| `terminais`       | `id`, `numero`, `nome`                                                                                  |
 | `sessoes_votacao` | `id`, `eleitor_id`, `terminal_id`, `liberada`, `votou`, `data_liberacao`, `data_expiracao`, `data_voto` |
-| `votos` | `id`, `eleitor_id`, `chapa_id`, `data_voto` |
+| `votos`           | `id`, `eleitor_id`, `chapa_id`, `data_voto`                                                             |
+| `eleicoes`        | `id`, `titulo`, `data_inicio`, `data_fim`, `ativa`, `data_criacao`                                      |
+| `audit_log`       | `id`, `acao`, `usuario_id`, `ip`, `detalhes`, `data_registro`                                           |
+| `rate_limit`      | `id`, `ip`, `data_tentativa`                                                                            |
 
 ---
 
@@ -22,8 +28,8 @@ Sistema de votação escolar digital com painel de mesário, terminais de votaç
 
 - [ ] **1.1 — Criar script SQL de criação do banco e tabelas**
   - Arquivo: `database/schema.sql`
-  - Criar banco `votacao_digitech`
-  - Criar tabelas: `alunos`, `chapas`, `terminais`, `sessoes_votacao`, `votos`
+  - Usar banco compartilhado `votacao_digitech` (schema definido no módulo votacao-digitech)
+  - Criar tabelas: `alunos`, `chapas`, `terminais`, `sessoes_votacao`, `votos`, `eleicoes`, `audit_log`, `rate_limit`
   - Definir chaves primárias, estrangeiras, índices e constraints (`UNIQUE` em `matricula`, `UNIQUE(eleitor_id)` em `votos` para impedir voto duplo)
 
 - [ ] **1.2 — Criar script SQL de dados iniciais (seed)**
@@ -39,6 +45,7 @@ Sistema de votação escolar digital com painel de mesário, terminais de votaç
 - [ ] **2.1 — Criar classe `Aluno`**
   - Arquivo: `classes/Aluno.php`
   - Responsabilidade: CRUD de alunos
+
   ```php
   class Aluno {
       public function __construct(PDO $pdo)
@@ -55,6 +62,7 @@ Sistema de votação escolar digital com painel de mesário, terminais de votaç
 - [ ] **2.2 — Criar classe `Chapa`**
   - Arquivo: `classes/Chapa.php`
   - Responsabilidade: CRUD de chapas/candidatos
+
   ```php
   class Chapa {
       public function __construct(PDO $pdo)
@@ -69,6 +77,7 @@ Sistema de votação escolar digital com painel de mesário, terminais de votaç
 - [ ] **2.3 — Criar classe `Terminal`**
   - Arquivo: `classes/Terminal.php`
   - Responsabilidade: CRUD e status dos terminais
+
   ```php
   class Terminal {
       public function __construct(PDO $pdo)
@@ -115,9 +124,7 @@ Sistema de votação escolar digital com painel de mesário, terminais de votaç
   - Ajustar `SessaoVotacao::marcarVotacao()` para aceitar `?int $chapaId`
 
 - [ ] **3.3 — Adicionar polling ou auto-refresh na tela de espera**
-  - Arquivo: `api/verificar_sessao.php`
-  - Endpoint que retorna JSON com status da sessão do terminal
-  - O `terminal.php` faz requisição AJAX periódica (ex: a cada 3s) para verificar se o mesário liberou
+  - O `terminal.php` faz requisição AJAX periódica (ex: a cada 3s) para `api/verificar_sessao.php`
 
 ---
 
@@ -125,7 +132,7 @@ Sistema de votação escolar digital com painel de mesário, terminais de votaç
 
 > Depende de: Fase 2 e Fase 3
 
-- [ ] **4.1 — Endpoint de verificação de sessão**
+- [ ] **4.1 — Criar endpoint de verificação de sessão**
   - Arquivo: `api/verificar_sessao.php`
   - Método: `GET ?terminal_id=X`
   - Retorno JSON: `{ liberada: bool, aluno_nome: string|null }`
@@ -182,6 +189,7 @@ Sistema de votação escolar digital com painel de mesário, terminais de votaç
 
 - [ ] **6.2 — Criar classe `Auth`**
   - Arquivo: `classes/Auth.php`
+
   ```php
   class Auth {
       public function __construct(PDO $pdo)
@@ -257,8 +265,8 @@ Sistema de votação escolar digital com painel de mesário, terminais de votaç
 
 ## Arquivos Existentes (não recriar)
 
-| Arquivo | Responsabilidade |
-|---|---|
-| `config.php` | Conexão PDO com o banco MySQL |
-| `index.php` | Painel do mesário (busca aluno, seleciona terminal, libera votação) |
+| Arquivo                     | Responsabilidade                                                     |
+| --------------------------- | -------------------------------------------------------------------- |
+| `config.php`                | Conexão PDO com o banco MySQL                                        |
+| `index.php`                 | Painel do mesário (busca aluno, seleciona terminal, libera votação)  |
 | `classes/SessaoVotacao.php` | Gerencia sessões de votação: criar, verificar, marcar voto, encerrar |
