@@ -1,0 +1,28 @@
+# XAMPP / Sistema
+.htaccess
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDEs e editores
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+error_log
+
+# Uploads de usuário
+uploads/
+
+# Dependências (se usar Composer no futuro)
+vendor/
+composer.lock
+
+# Ambiente
+.env
