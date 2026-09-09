@@ -1,247 +1,31 @@
-# Mesário DigiTech
+# Mesário DigiTech — REPOSITÓRIO ARQUIVADO
 
-Sistema de votação escolar digital com painel de mesário, terminais de votação e apuração de resultados.
+> **Este repositório foi arquivado em 09/09/2026.** O desenvolvimento continua em um único repositório:
+>
+> ## ➜ https://github.com/prof-ronildo-unicatolica/votacao-digitech
 
-## Requisitos
+## Por que foi arquivado
 
-- [XAMPP](https://www.apachefriends.org/) (Apache + MySQL + PHP 8.x)
-- Navegador moderno (Chrome, Firefox, Edge)
+O "mesário" não é um sistema separado: é um **perfil de usuário** e um **conjunto de telas** do sistema de votação. Manter dois repositórios com o mesmo banco de dados gerava duplicação de documentação, migrações conflitantes e deploy duplo. A justificativa completa está em [`docs/DECISOES.md`](https://github.com/prof-ronildo-unicatolica/votacao-digitech/blob/develop/docs/DECISOES.md) (decisão D1) do repositório principal.
 
-## Instalação
+## Onde está cada coisa agora
 
-1. **Clone o repositório** na pasta `htdocs` do XAMPP:
+| O que este repositório planejava              | Onde vive no `votacao-digitech`                                  |
+| --------------------------------------------- | ---------------------------------------------------------------- |
+| Painel do mesário (`index.php`)               | Rota `/mesario` · histórias **H6** e **H9** em `docs/HISTORIAS_USUARIO.md` |
+| Terminal de votação (`terminal.php`)          | Rota `/urna/{terminal}` · histórias **H7** e **H8**              |
+| Painel administrativo (`admin/`)              | Rota `/admin` · histórias **H1** a **H5**, **H10**, **H11**      |
+| Classes `Aluno`, `Chapa`, `Terminal`, `Apuracao` | Models Eloquent em `app/Models/` e `app/Support/Apuracao.php` |
+| `database/schema.sql` e `seed.sql`            | `database/migrations/` e `database/seeders/`                     |
+| `api/verificar_sessao.php`                    | `GET /api/terminais/{id}/status` (já funcional)                  |
+| Classe `Auth`, CSRF, validação                | Recursos nativos do Laravel (ver `docs/ROADMAP.md`)              |
+| Fluxo de Git (deste README)                   | `docs/GIT_FLOW.md`                                               |
+| Plano de implementação                        | `docs/ROADMAP.md` + `docs/HISTORIAS_USUARIO.md`                  |
 
-   ```bash
-   cd C:\xampp\htdocs
-   git clone <url-do-repositorio> mesario-digitech
-   ```
+## Para a equipe
 
-2. **Inicie o XAMPP** e ative os serviços **Apache** e **MySQL**.
+1. Clone o repositório principal e siga `docs/INSTALACAO_XAMPP.md` ou `docs/INSTALACAO_LAMP.md`.
+2. Os cartões do Trello vêm de `docs/HISTORIAS_USUARIO.md`.
+3. Não abra issues nem PRs aqui: o repositório é somente leitura.
 
-3. **Crie o banco de dados** acessando o phpMyAdmin (`http://localhost/phpmyadmin`) e execute o script:
-
-   ```
-   database/schema.sql
-   ```
-
-4. **(Opcional) Popule com dados de teste:**
-
-   ```
-   database/seed.sql
-   ```
-
-5. **Acesse o sistema:**
-
-   | Página                | URL                                                         |
-   | --------------------- | ----------------------------------------------------------- |
-   | Painel do Mesário     | `http://localhost/mesario-digitech/`                        |
-   | Terminal de Votação   | `http://localhost/mesario-digitech/terminal.php?terminal=1` |
-   | Painel Administrativo | `http://localhost/mesario-digitech/admin/`                  |
-
-## Configuração
-
-O arquivo `config.php` contém as credenciais de conexão com o banco. As configurações padrão funcionam com o XAMPP sem alterações:
-
-```php
-DB_HOST = 'localhost'
-DB_USER = 'root'
-DB_PASS = ''
-DB_NAME = 'votacao_digitech'
-```
-
-## Estrutura do Projeto
-
-```
-mesario-digitech/
-├── config.php                 # Conexão com o banco de dados
-├── index.php                  # Painel do mesário
-├── terminal.php               # Tela de votação do aluno
-├── login.php                  # Página de login
-├── classes/
-│   ├── SessaoVotacao.php      # Gerenciamento de sessões de votação
-│   ├── Aluno.php              # CRUD de alunos
-│   ├── Chapa.php              # CRUD de chapas
-│   ├── Terminal.php           # CRUD de terminais
-│   ├── Apuracao.php           # Contagem e resultados
-│   └── Auth.php               # Autenticação (login, logout, perfis)
-├── admin/
-│   ├── index.php              # Dashboard administrativo
-│   ├── alunos.php             # Gerenciamento de alunos
-│   ├── chapas.php             # Gerenciamento de chapas
-│   ├── terminais.php          # Gerenciamento de terminais
-│   └── apuracao.php           # Apuração de resultados
-├── api/
-│   ├── verificar_sessao.php   # Polling de sessão do terminal
-│   └── registrar_voto.php     # Registro de voto via AJAX
-└── database/
-    ├── schema.sql             # Criação do banco e tabelas
-    └── seed.sql               # Dados iniciais para teste
-```
-
-## Modelo de Dados
-
-| Tabela            | Descrição                                             |
-| ----------------- | ----------------------------------------------------- |
-| `alunos`          | Cadastro de alunos (matrícula, nome, turma, tipo, senha_hash) |
-| `chapas`          | Chapas/candidatos disponíveis para votação            |
-| `terminais`       | Terminais de votação disponíveis                      |
-| `sessoes_votacao` | Controle de sessões de votação por terminal           |
-| `votos`           | Registro de votos (com constraint contra duplicidade) |
-| `eleicoes`        | Configuração de período de votação                    |
-| `audit_log`       | Log de auditoria de ações do sistema                  |
-| `rate_limit`      | Controle de tentativas por IP                         |
-
-> **Banco compartilhado:** ambos os módulos (mesario-digitech e votacao-digitech) utilizam o mesmo banco `votacao_digitech`.
-
-## Fluxo de Uso
-
-1. **Admin** cadastra alunos, chapas e terminais pelo painel administrativo.
-2. **Mesário** busca o aluno pela matrícula, seleciona o terminal e libera a votação.
-3. **Aluno** acessa o terminal, visualiza as chapas e registra seu voto.
-4. **Admin** acompanha a apuração em tempo real pelo painel de resultados.
-
-## Fluxo de Git (Git Flow)
-
-### Branches principais
-
-| Branch    | Propósito                                                            |
-| --------- | -------------------------------------------------------------------- |
-| `main`    | Código estável e em produção. Nunca commitar direto aqui.            |
-| `develop` | Branch de integração. Todas as features são mergeadas aqui primeiro. |
-
-### Configuração inicial
-
-```bash
-# Clonar o repositório
-git clone <url-do-repositorio> mesario-digitech
-cd mesario-digitech
-
-# Criar a branch develop a partir da main
-git checkout -b develop
-git push -u origin develop
-```
-
-### Padrão de criação de branches
-
-Sempre crie branches a partir da `develop`:
-
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b <tipo>/<descricao-curta>
-```
-
-**Tipos de branch:**
-
-| Prefixo     | Uso                          | Exemplo                   |
-| ----------- | ---------------------------- | ------------------------- |
-| `feature/`  | Nova funcionalidade          | `feature/crud-alunos`     |
-| `fix/`      | Correção de bug              | `fix/validacao-matricula` |
-| `hotfix/`   | Correção urgente em produção | `hotfix/erro-login`       |
-| `refactor/` | Refatoração de código        | `refactor/classe-sessao`  |
-
-### Padrão de commits
-
-Usar o formato **Conventional Commits**:
-
-```
-<tipo>: <descrição curta>
-```
-
-**Tipos de commit:**
-
-| Tipo       | Quando usar                            |
-| ---------- | -------------------------------------- |
-| `feat`     | Nova funcionalidade                    |
-| `fix`      | Correção de bug                        |
-| `refactor` | Refatoração sem mudar comportamento    |
-| `style`    | Formatação, CSS, sem mudança de lógica |
-| `docs`     | Alteração em documentação              |
-| `chore`    | Tarefas de manutenção (configs, deps)  |
-
-**Exemplos:**
-
-```bash
-git commit -m "feat: criar classe Aluno com CRUD completo"
-git commit -m "fix: corrigir validação de matrícula duplicada"
-git commit -m "style: ajustar layout da tela de votação"
-git commit -m "docs: adicionar instruções de instalação no README"
-```
-
-### Fluxo de trabalho completo
-
-**1. Criar a feature branch e trabalhar nela:**
-
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/crud-alunos
-
-# Trabalhar, fazer commits...
-git add .
-git commit -m "feat: criar classe Aluno com métodos de CRUD"
-git add .
-git commit -m "feat: criar página admin de gerenciamento de alunos"
-```
-
-**2. Subir a branch para o repositório remoto:**
-
-```bash
-git push -u origin feature/crud-alunos
-```
-
-**3. Criar um Pull Request (PR):**
-
-- Acesse o repositório no GitHub/GitLab.
-- Clique em **"Pull Requests"** → **"New Pull Request"**.
-- Base: `develop` ← Compare: `feature/crud-alunos`.
-- Adicione um título descritivo e uma descrição do que foi feito.
-- Solicite revisão de um colega (se aplicável).
-- Após aprovação, faça o **merge**.
-
-**4. Atualizar sua develop local após o merge:**
-
-```bash
-git checkout develop
-git pull origin develop
-```
-
-**5. Deletar a branch da feature (opcional):**
-
-```bash
-git branch -d feature/crud-alunos
-git push origin --delete feature/crud-alunos
-```
-
-### Merge da develop para a main (deploy)
-
-Quando a `develop` estiver estável e testada:
-
-```bash
-# Via Pull Request (recomendado):
-# Base: main ← Compare: develop
-# Criar PR no GitHub e fazer merge após revisão
-
-# Ou via terminal:
-git checkout main
-git pull origin main
-git merge develop
-git push origin main
-git checkout develop
-```
-
-### Resumo visual
-
-```
-main ─────────────────────●──────────── (produção)
-                         ↑ merge
-develop ──●───●───●──────●───●──────── (integração)
-          ↑       ↑
-feature/  ●───●   ●───●───●
-crud-     (commits)
-alunos
-```
-
-## Licença
-
-Este projeto é de uso educacional.
+O histórico de commits deste repositório permanece disponível para consulta.
